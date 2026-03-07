@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="카카오톡 공유", layout="centered")
 
-APP_URL = "https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app"
+APP_URL = "https://ai5788285.streamlit.app"
 
 # ──────────────────────────────────────────────────────────────
 # ★ 카카오 JavaScript 앱키를 아래에 입력하세요 ★
@@ -35,7 +35,7 @@ if not KAKAO_JS_KEY:
         1️⃣ <a href="https://developers.kakao.com" target="_blank">developers.kakao.com</a> 접속 → 로그인<br>
         2️⃣ 내 애플리케이션 → 애플리케이션 추가하기<br>
         3️⃣ [앱] → [플랫폼 키] → [JavaScript 키] 복사<br>
-        4️⃣ [JavaScript 키] → JavaScript SDK 도메인에 <code>ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app</code> 추가<br>
+        4️⃣ [JavaScript 키] → JavaScript SDK 도메인에 <code>ai5788285.streamlit.app</code> 추가<br>
         5️⃣ [앱] → [제품 링크 관리] → [웹 도메인]에 동일 URL 추가<br>
         6️⃣ 이 파일 2번째 줄 KAKAO_JS_KEY = "" 에 키 붙여넣기
       </span>
