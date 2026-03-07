@@ -14,8 +14,8 @@ except ImportError:
 APP_TITLE = "AI 예약 자동 매칭 챗봇 부동산플랫폼"
 APP_SUBTITLE = "AI 실거래가 분석 · 사전예약 매칭 · 공동중개 네트워크 · 자동 숏츠 광고"
 APP_DESC = "AI가 추천하는 프리미엄 매물과 상담 예약 서비스를 확인해보세요."
-APP_URL = "https://ai5788285.streamlit.app"
-APP_IMAGE = "https://ai5788285.streamlit.app/favicon.png"
+APP_URL = "https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app"
+APP_IMAGE = "https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app/favicon.png"
 KAKAO_JS_KEY = "76eaac78ebaf08220bcf6d4b83012e91"
 
 OFFICE = "롯데타워앤강남빌딩부동산중개(주)"

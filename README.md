@@ -9,7 +9,7 @@
 
 ## 🚀 앱 바로 실행하기
 
-### 👉 [▶ 앱 실행하기 클릭](https://ai5788285.streamlit.app)
+### 👉 [▶ 앱 실행하기 클릭](https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app)
 
 > 💬 **카카오톡으로 위 링크를 공유하면 고객이 바로 실행할 수 있습니다!**
 
