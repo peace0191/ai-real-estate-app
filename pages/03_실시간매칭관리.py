@@ -2,7 +2,7 @@ import streamlit as st
 from services.property_store import (
     get_demand_items, get_supply_items, get_co_broker_items, push_alert
 )
-from services.matching_service import build_matches
+from services.matching_service import get_matches
 
 st.set_page_config(page_title="실시간 매칭관리", layout="wide")
 
@@ -39,7 +39,7 @@ st.markdown("""
 demand  = get_demand_items()
 supply  = get_supply_items()
 co      = get_co_broker_items()
-matches = build_matches(demand, supply)
+matches = get_matches()
 
 # 요약 메트릭
 m1, m2, m3, m4 = st.columns(4)
@@ -124,8 +124,8 @@ with tab4:
               <b>🔵 수요자:</b> {m["demand_name"]} &nbsp;&nbsp;
               <b>🟢 공급매물:</b> {m["supply_name"]}<br>
               <span style="font-size:0.88rem">
-                지역: {m["region"]} | 유형: {m["property_type"]} |
-                거래: {m["trade_type"]} | 가격: {m["price"]}만원
+                지역: {m["region"]} | 유형: {m["type"]} |
+                거래: {m["trade"]} | 가격: {m["price"]}만원
               </span><br>
               <div style="margin-top:0.5rem;background:#e2e8f0;border-radius:8px;height:12px;">
                 <div style="width:{score}%;background:{bar_color};border-radius:8px;height:12px;"></div>

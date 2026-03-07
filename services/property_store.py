@@ -74,3 +74,56 @@ def add_shorts_candidate(item: dict):
     items = get_shorts_candidates()
     items.append(item)
     _save(SHORTS_FILE, items)
+
+# ── 별칭 함수 (pages 호환용) ────────────────────────────────
+def save_property(p: dict) -> str:
+    """add_property 별칭"""
+    return add_property(p)
+
+def save_shorts_candidate(item: dict):
+    """add_shorts_candidate 별칭"""
+    add_shorts_candidate(item)
+
+def get_demand_items() -> list:
+    """수요 목록 반환"""
+    return get_demands()
+
+def get_supply_items() -> list:
+    """공급 매물 반환 (deal_side=공급 또는 category=supply)"""
+    return [p for p in get_all_properties()
+            if p.get("deal_side") == "공급" or p.get("category") == "supply"]
+
+def get_co_broker_items() -> list:
+    """공동중개 매물 반환"""
+    return [p for p in get_all_properties()
+            if p.get("co_broker") or p.get("category") == "joint"]
+
+def get_reviewed_items() -> list:
+    """승인 완료 매물 반환"""
+    return [p for p in get_all_properties() if p.get("status") == "승인"]
+
+def save_reviewed_item(item: dict):
+    """검수 정보 저장 (id 기준 업데이트)"""
+    prop_id = item.get("id")
+    if prop_id:
+        update_property(prop_id, item)
+    else:
+        add_property(item)
+
+# ── 알림 ─────────────────────────────────────────────────────
+ALERT_FILE = "data/alerts.json"
+
+def get_alerts() -> list:
+    return _load(ALERT_FILE)
+
+def push_alert(title: str, message: str, level: str = "info"):
+    """알림 저장 (최근 100건 유지)"""
+    alerts = get_alerts()
+    alerts.insert(0, {
+        "title":      title,
+        "message":    message,
+        "level":      level,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    })
+    _save(ALERT_FILE, alerts[:100])
+
