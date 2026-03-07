@@ -1,0 +1,47 @@
+name: AI 부동산 플랫폼 CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: 코드 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+      - name: Python 문법 검사
+        run: |
+          python -m py_compile app.py
+          python -m py_compile services/property_store.py
+          python -m py_compile services/matching_service.py
+          python -m py_compile services/realprice_service.py
+          python -m py_compile ai_engine/undervalue_engine.py
+          for f in pages/*.py; do python -m py_compile "$f"; done
+          echo "모든 파일 문법 검사 통과"
+      - name: Import 검사
+        run: |
+          python -c "from services.property_store import get_all_properties; print('property_store OK')"
+          python -c "from services.realprice_service import get_prices; print('realprice_service OK')"
+          python -c "from ai_engine.undervalue_engine import analyze; print('undervalue_engine OK')"
+          python -c "from services.matching_service import get_matches; print('matching_service OK')"
+
+  docker-build:
+    name: Docker 빌드
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker 빌드
+        run: docker build -f deployment/Dockerfile -t ai-realty-platform:latest .
+      - name: 완료
+        run: echo "배포 준비 완료"
