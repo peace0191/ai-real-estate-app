@@ -17,7 +17,8 @@ st.markdown("""
   [data-testid="stSidebar"] { background: linear-gradient(180deg,#0A1F44 0%,#1E2F5B 100%); }
   [data-testid="stSidebar"] * { color: #f8f8f8 !important; }
   [data-testid="stSidebar"] .stSelectbox label,
-  [data-testid="stSidebar"] .stRadio label { color: #D4AF37 !important; }
+  [data-testid="stSidebar"] .stRadio label { color:
+  #D4AF37 !important; }
 
   /* 헤더 */
   .main-header {
@@ -62,18 +63,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── 메인 대시보드 카드 ───────────────────────────────────────────
-from services.property_store import (
-    get_all_properties, get_demand_items, get_supply_items,
-    get_co_broker_items, get_reviewed_items
-)
-from services.matching_service import build_matches
+from services.property_store import get_all_properties, get_demands
+from services.matching_service import get_matches
 
 all_props   = get_all_properties()
-demand_list = get_demand_items()
-supply_list = get_supply_items()
-co_broker   = get_co_broker_items()
-reviewed    = get_reviewed_items()
-matches     = build_matches(demand_list, supply_list)
+demand_list = get_demands()
+supply_list = [p for p in all_props if p.get("category") == "supply"]
+co_broker   = [p for p in all_props if p.get("category") == "joint"]
+reviewed    = [p for p in all_props if p.get("status") == "승인"]
+matches     = get_matches()
 
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("📋 총 매물 접수", len(all_props))
@@ -125,7 +123,7 @@ if matches:
     for m in matches[:3]:
         st.success(
             f"🤝 **{m['demand_name']}** ↔ **{m['supply_name']}**  |  "
-            f"{m['region']} / {m['property_type']} / {m['trade_type']}  |  "
+            f"{m['region']} / {m['type']} / {m['trade']}  |  "
             f"매칭비율 **{m['score']}%**"
         )
 
