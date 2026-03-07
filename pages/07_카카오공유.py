@@ -5,6 +5,15 @@ st.set_page_config(page_title="카카오톡 공유", layout="centered")
 
 APP_URL = "https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app"
 
+# ──────────────────────────────────────────────────────────────
+# ★ 카카오 JavaScript 앱키를 아래에 입력하세요 ★
+# 발급 방법: https://developers.kakao.com → 내 애플리케이션
+#            → [플랫폼 키] → [JavaScript 키] 복사
+# 도메인 등록: [플랫폼 키] > [JavaScript 키] > JavaScript SDK 도메인
+#               에 streamlit 앱 URL 추가 필요
+# ──────────────────────────────────────────────────────────────
+KAKAO_JS_KEY = ""   # ← 여기에 32자리 JavaScript 키 붙여넣기
+
 # CSS
 st.markdown("""
 <style>
@@ -16,129 +25,120 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 카카오 공유 HTML 컴포넌트
+# 앱키 입력 안내 (비어있을 때만 표시)
+if not KAKAO_JS_KEY:
+    st.markdown("""
+    <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+      <b style="color:#92400e;">⚠️ 카카오 JS 앱키 미설정</b><br>
+      <span style="color:#78350f;font-size:0.9rem;">
+        아래 단계로 앱키를 발급 후 코드에 입력하면 썸네일 카드 공유가 활성화됩니다.<br><br>
+        1️⃣ <a href="https://developers.kakao.com" target="_blank">developers.kakao.com</a> 접속 → 로그인<br>
+        2️⃣ 내 애플리케이션 → 애플리케이션 추가하기<br>
+        3️⃣ [앱] → [플랫폼 키] → [JavaScript 키] 복사<br>
+        4️⃣ [JavaScript 키] → JavaScript SDK 도메인에 <code>ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app</code> 추가<br>
+        5️⃣ [앱] → [제품 링크 관리] → [웹 도메인]에 동일 URL 추가<br>
+        6️⃣ 이 파일 2번째 줄 KAKAO_JS_KEY = "" 에 키 붙여넣기
+      </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+# SDK 모드 결정
+SDK_MODE = "sdk" if KAKAO_JS_KEY else "fallback"
+
 html_code = f"""
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Kakao JavaScript SDK (2025 최신) -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
+          integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
+          crossorigin="anonymous"></script>
+
+  <!-- QR 코드 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+
   <style>
     * {{ margin:0; padding:0; box-sizing:border-box; }}
-    body {{
-      font-family: 'Noto Sans KR', sans-serif;
-      background: transparent;
-      padding: 0;
-    }}
+    body {{ font-family:'Noto Sans KR',sans-serif; background:transparent; }}
     .card {{
-      background: rgba(255,255,255,0.97);
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      max-width: 480px;
-      margin: 0 auto;
+      background:rgba(255,255,255,0.97); border-radius:24px;
+      overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      max-width:480px; margin:0 auto;
     }}
     .header {{
-      background: linear-gradient(135deg, #0A1F44, #1E3A6E);
-      padding: 28px 24px 20px;
-      border-bottom: 3px solid #D4AF37;
-      text-align: center;
+      background:linear-gradient(135deg,#0A1F44,#1E3A6E);
+      padding:28px 24px 20px; border-bottom:3px solid #D4AF37; text-align:center;
     }}
-    .header .logo {{ font-size: 2.5rem; margin-bottom: 6px; }}
-    .header h1 {{ color: #D4AF37; font-size: 1.15rem; font-weight: 900; line-height: 1.4; margin-bottom: 5px; }}
-    .header p {{ color: #b0c4de; font-size: 0.78rem; }}
+    .logo {{ font-size:2.5rem; margin-bottom:6px; }}
+    .header h1 {{ color:#D4AF37; font-size:1.15rem; font-weight:900; line-height:1.4; margin-bottom:5px; }}
+    .header p  {{ color:#b0c4de; font-size:0.78rem; }}
     .badge-row {{ display:flex; gap:6px; justify-content:center; margin-top:12px; flex-wrap:wrap; }}
     .badge {{
-      background: rgba(212,175,55,0.15);
-      border: 1px solid #D4AF37;
-      color: #D4AF37;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 700;
+      background:rgba(212,175,55,0.15); border:1px solid #D4AF37; color:#D4AF37;
+      padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700;
     }}
-    .body {{ padding: 24px; }}
+    /* SDK 상태 뱃지 */
+    .sdk-badge {{
+      display:inline-block; padding:4px 12px; border-radius:999px;
+      font-size:0.72rem; font-weight:700; margin-bottom:12px;
+    }}
+    .sdk-on  {{ background:#dcfce7; color:#166534; border:1px solid #86efac; }}
+    .sdk-off {{ background:#fef9c3; color:#854d0e; border:1px solid #fcd34d; }}
+
+    .body {{ padding:24px; }}
     .sec-title {{ font-size:0.72rem; font-weight:700; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }}
     .link-box {{
-      background: #f0f4ff;
-      border: 2px solid #c7d4f5;
-      border-radius: 10px;
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
+      background:#f0f4ff; border:2px solid #c7d4f5; border-radius:10px;
+      padding:12px 14px; display:flex; align-items:center; gap:8px; margin-bottom:16px;
     }}
     .link-text {{ flex:1; font-size:0.72rem; color:#1d3a8a; word-break:break-all; font-weight:600; }}
     .copy-btn {{
-      background: #0A1F44; color: white; border: none;
-      padding: 7px 12px; border-radius: 7px; cursor: pointer;
-      font-size: 0.7rem; font-weight: 700; white-space: nowrap;
-      transition: background 0.2s;
+      background:#0A1F44; color:white; border:none; padding:7px 12px;
+      border-radius:7px; cursor:pointer; font-size:0.7rem; font-weight:700;
+      white-space:nowrap; transition:background 0.2s;
     }}
-    .copy-btn:hover {{ background: #1E3A6E; }}
-    .copy-btn.done {{ background: #22c55e; }}
+    .copy-btn:hover {{ background:#1E3A6E; }}
+    .copy-btn.done {{ background:#22c55e; }}
     .btn {{
-      display: flex; align-items: center; justify-content: center;
-      gap: 10px; width: 100%; padding: 14px;
-      border-radius: 12px; border: none; cursor: pointer;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-size: 0.95rem; font-weight: 700;
-      transition: transform 0.15s, box-shadow 0.15s;
-      text-decoration: none;
-      margin-bottom: 10px;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
+      font-family:'Noto Sans KR',sans-serif; font-size:0.95rem; font-weight:700;
+      transition:transform 0.15s,box-shadow 0.15s; text-decoration:none; margin-bottom:10px;
     }}
-    .btn:active {{ transform: scale(0.97); }}
-    .btn-kakao {{ background: #FEE500; color: #3C1E1E; box-shadow: 0 4px 14px rgba(254,229,0,0.4); }}
-    .btn-kakao:hover {{ box-shadow: 0 6px 22px rgba(254,229,0,0.6); transform:translateY(-1px); }}
-    .btn-open {{
-      background: linear-gradient(135deg, #0A1F44, #1E3A6E); color: white;
-      box-shadow: 0 4px 14px rgba(10,31,68,0.3);
-    }}
-    .btn-open:hover {{ box-shadow: 0 6px 22px rgba(10,31,68,0.5); transform:translateY(-1px); }}
-    .btn-sms {{
-      background: #f0fdf4; color: #166534;
-      border: 2px solid #bbf7d0; box-shadow: none;
-    }}
-    .btn-sms:hover {{ background: #dcfce7; }}
+    .btn:active {{ transform:scale(0.97); }}
+    .btn-kakao {{ background:#FEE500; color:#3C1E1E; box-shadow:0 4px 14px rgba(254,229,0,0.4); }}
+    .btn-kakao:hover {{ box-shadow:0 6px 22px rgba(254,229,0,0.6); transform:translateY(-1px); }}
+    .btn-open {{ background:linear-gradient(135deg,#0A1F44,#1E3A6E); color:white; box-shadow:0 4px 14px rgba(10,31,68,0.3); }}
+    .btn-open:hover {{ box-shadow:0 6px 22px rgba(10,31,68,0.5); transform:translateY(-1px); }}
+    .btn-sms {{ background:#f0fdf4; color:#166534; border:2px solid #bbf7d0; }}
+    .btn-sms:hover {{ background:#dcfce7; }}
     .divider {{ border:none; border-top:1px solid #e8edf5; margin:18px 0; }}
     .features {{ display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:18px; }}
-    .feat {{
-      background: #f8fafc; border: 1px solid #e2e8f0;
-      border-radius: 9px; padding: 9px 11px;
-      font-size: 0.76rem; color: #334155;
-    }}
+    .feat {{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:9px; padding:9px 11px; font-size:0.76rem; color:#334155; }}
     .feat .ic {{ font-size:1rem; display:block; margin-bottom:2px; }}
-    .qr-section {{ text-align: center; }}
-    #qrcode {{
-      display: inline-block; padding:14px;
-      background: white; border: 2px solid #dde3ef;
-      border-radius: 14px; margin: 10px auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.07);
-    }}
+    .qr-section {{ text-align:center; }}
+    #qrcode {{ display:inline-block; padding:14px; background:white; border:2px solid #dde3ef; border-radius:14px; margin:10px auto; box-shadow:0 4px 12px rgba(0,0,0,0.07); }}
     .qr-cap {{ font-size:0.72rem; color:#888; margin-top:6px; }}
-    .co-info {{
-      background: #0A1F44; color: #b0c4de;
-      border-radius: 11px; padding: 13px 15px;
-      font-size: 0.72rem; line-height: 1.9; margin-top:4px;
-    }}
-    .co-info strong {{ color: #D4AF37; }}
+    .co-info {{ background:#0A1F44; color:#b0c4de; border-radius:11px; padding:13px 15px; font-size:0.72rem; line-height:1.9; margin-top:4px; }}
+    .co-info strong {{ color:#D4AF37; }}
     .toast {{
-      position: fixed; bottom:24px; left:50%;
-      transform: translateX(-50%) translateY(70px);
-      background: #1e293b; color: white;
-      padding: 10px 22px; border-radius: 999px;
-      font-size: 0.82rem; font-weight: 700;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      transition: transform 0.3s ease; z-index: 999;
-      white-space: nowrap;
+      position:fixed; bottom:24px; left:50%;
+      transform:translateX(-50%) translateY(70px);
+      background:#1e293b; color:white; padding:10px 22px;
+      border-radius:999px; font-size:0.82rem; font-weight:700;
+      box-shadow:0 8px 24px rgba(0,0,0,0.3); transition:transform 0.3s ease;
+      z-index:999; white-space:nowrap;
     }}
-    .toast.show {{ transform: translateX(-50%) translateY(0); }}
+    .toast.show {{ transform:translateX(-50%) translateY(0); }}
   </style>
 </head>
 <body>
+
 <div class="card">
   <div class="header">
     <div class="logo">🏠</div>
@@ -151,7 +151,15 @@ html_code = f"""
       <span class="badge">숏츠 광고</span>
     </div>
   </div>
+
   <div class="body">
+    <!-- SDK 상태 표시 -->
+    <div style="text-align:center;margin-bottom:14px;">
+      <span class="sdk-badge {'sdk-on' if KAKAO_JS_KEY else 'sdk-off'}">
+        {'✅ 카카오 SDK 활성화 — 미리보기 카드 공유 가능' if KAKAO_JS_KEY else '⚠️ SDK 미설정 — 기본 공유 모드'}
+      </span>
+    </div>
+
     <div class="sec-title">🔗 앱 링크</div>
     <div class="link-box">
       <div class="link-text">{APP_URL}</div>
@@ -160,12 +168,13 @@ html_code = f"""
 
     <button class="btn btn-kakao" onclick="shareKakao()">
       💬&nbsp; 카카오톡으로 공유하기
+      {'&nbsp;<span style="font-size:0.7rem;opacity:0.8">(미리보기 카드)</span>' if KAKAO_JS_KEY else ''}
     </button>
     <a class="btn btn-open" href="{APP_URL}" target="_blank">
       ▶&nbsp; 앱 바로 실행하기
     </a>
     <a class="btn btn-sms"
-       href="sms:?body=AI 부동산 플랫폼 바로 실행 → {APP_URL}">
+       href="sms:?body=🏠 AI 부동산 플랫폼 바로 실행 → {APP_URL}">
       📱&nbsp; 문자(SMS)로 공유하기
     </a>
 
@@ -203,62 +212,100 @@ html_code = f"""
 <div class="toast" id="toast">✅ 복사되었습니다!</div>
 
 <script>
-const URL = "{APP_URL}";
+const APP_URL   = "{APP_URL}";
+const JS_KEY    = "{KAKAO_JS_KEY}";
+const SDK_MODE  = "{SDK_MODE}";
 
-// QR 코드 생성
+// QR 코드
 new QRCode(document.getElementById("qrcode"), {{
-  text: URL, width: 150, height: 150,
-  colorDark: "#0A1F44", colorLight: "#ffffff",
+  text: APP_URL, width:150, height:150,
+  colorDark:"#0A1F44", colorLight:"#ffffff",
   correctLevel: QRCode.CorrectLevel.H
 }});
 
-// 링크 복사
-function doClick(text,toastMsg={{}}){{}};
-function doClick(){{}}
-function doCopy() {{
-  navigator.clipboard.writeText(URL).then(() => {{
-    const b = document.getElementById("cpBtn");
-    b.textContent = "✓ 복사됨"; b.classList.add("done");
-    showToast("✅ 링크가 복사되었습니다!");
-    setTimeout(() => {{ b.textContent="복사"; b.classList.remove("done"); }}, 2500);
-  }}).catch(() => {{
-    const t = document.createElement("textarea");
-    t.value = URL; document.body.appendChild(t);
-    t.select(); document.execCommand("copy");
-    document.body.removeChild(t);
-    showToast("✅ 링크가 복사되었습니다!");
-  }});
+// Kakao SDK 초기화 (키가 있을 때만)
+if (JS_KEY && typeof Kakao !== "undefined") {{
+  try {{
+    if (!Kakao.isInitialized()) Kakao.init(JS_KEY);
+    console.log("✅ Kakao SDK 초기화 완료");
+  }} catch(e) {{ console.warn("Kakao 초기화 실패:", e); }}
 }}
 
+// ── 링크 복사 ────────────────────────────────────────────────
+function doCopy() {{
+  const fallback = () => {{
+    const ta = document.createElement("textarea");
+    ta.value = APP_URL; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("✅ 링크가 복사되었습니다!");
+  }};
+  if (navigator.clipboard) {{
+    navigator.clipboard.writeText(APP_URL).then(() => {{
+      const b = document.getElementById("cpBtn");
+      b.textContent = "✓ 복사됨"; b.classList.add("done");
+      showToast("✅ 링크가 복사되었습니다!");
+      setTimeout(() => {{ b.textContent="복사"; b.classList.remove("done"); }}, 2500);
+    }}).catch(fallback);
+  }} else {{ fallback(); }}
+}}
+
+// ── 토스트 ───────────────────────────────────────────────────
 function showToast(msg) {{
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2500);
+  setTimeout(() => t.classList.remove("show"), 2800);
 }}
 
-// 카카오톡 공유
+// ── 카카오톡 공유 ────────────────────────────────────────────
 function shareKakao() {{
-  const ua = navigator.userAgent;
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-  const msg = "🏠 AI 부동산 플랫폼\\n\\n▶ 바로 실행하기:\\n" + URL +
-              "\\n\\n롯데타워앤강남빌딩부동산중개(주)\\n☎ 02-578-8285";
+  // ① SDK 모드: 미리보기 카드 공유 (앱키 등록 시)
+  if (JS_KEY && typeof Kakao !== "undefined" && Kakao.isInitialized()) {{
+    Kakao.Share.sendDefault({{
+      objectType: "feed",
+      content: {{
+        title: "🏠 AI 예약 자동 매칭 챗봇 부동산플랫폼",
+        description: "AI 실거래가 분석 · 저평가 매물 탐지 · 자동 매칭 · 24시간 챗봇 상담\\n롯데타워앤강남빌딩부동산중개(주) | ☎ 02-578-8285",
+        imageUrl: "https://via.placeholder.com/800x400/0A1F44/D4AF37?text=AI+부동산+플랫폼",
+        link: {{ mobileWebUrl: APP_URL, webUrl: APP_URL }}
+      }},
+      social: {{
+        likeCount: 0,
+        commentCount: 0,
+        sharedCount: 0
+      }},
+      buttons: [
+        {{
+          title: "▶ 앱 바로 실행",
+          link: {{ mobileWebUrl: APP_URL, webUrl: APP_URL }}
+        }},
+        {{
+          title: "📞 전화 상담",
+          link: {{ mobileWebUrl: "tel:02-578-8285", webUrl: APP_URL }}
+        }}
+      ]
+    }});
+    return;
+  }}
 
+  // ② Fallback: 모바일 앱 스킴 → PC 클립보드 복사
+  const msg = "🏠 AI 부동산 플랫폼\\n\\n" +
+              "▶ 바로 실행하기:\\n" + APP_URL + "\\n\\n" +
+              "롯데타워앤강남빌딩부동산중개(주)\\n☎ 02-578-8285";
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobile) {{
-    // 모바일: 카카오톡 앱 스킴으로 직접 오픈
     window.location.href = "kakaotalk://msg/send?text=" + encodeURIComponent(msg);
     setTimeout(() => {{
-      if (!document.hidden) openKakaoWeb(msg);
+      if (!document.hidden) {{
+        navigator.clipboard.writeText(APP_URL).catch(()=>{{}});
+        showToast("💬 카카오톡 앱에서 공유해주세요!");
+      }}
     }}, 1800);
   }} else {{
-    openKakaoWeb(msg);
+    navigator.clipboard.writeText(APP_URL).catch(()=>{{}});
+    showToast("💬 링크 복사됨! 카카오톡에 붙여넣기 하세요.");
   }}
-}}
-
-function openKakaoWeb(msg) {{
-  // PC: 카카오톡 웹 공유 또는 클립보드 복사 안내
-  const encoded = encodeURIComponent(msg || URL);
-  showToast("💬 카카오톡을 열고 링크를 붙여넣기 하세요!");
-  navigator.clipboard.writeText(URL).catch(()={{}});
 }}
 </script>
 </body>
@@ -266,4 +313,4 @@ function openKakaoWeb(msg) {{
 """
 
 # Streamlit 컴포넌트로 렌더링
-components.html(html_code, height=1000, scrolling=False)
+components.html(html_code, height=1050, scrolling=False)
