@@ -1,316 +1,319 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import qrcode
+from io import BytesIO
 
-st.set_page_config(page_title="카카오톡 공유", layout="centered")
+from services.share_message_service import build_property_share_data
 
-APP_URL = "https://ai5788285.streamlit.app"
+# ---------------------------------
+# 기본 정보
+# ---------------------------------
+APP_NAME = "AI 예약 자동 매칭 챗봇 부동산플랫폼"
+APP_DESC = "AI 실거래가 분석 · 사전예약 매칭 · 공동중개 네트워크 · 자동 숏츠 광고"
+APP_URL = "https://ai-real-estate-app-nvbi9ytwq6gh6tmztd4tpu.streamlit.app"
+APP_IMAGE = "https://cdn-icons-png.flaticon.com/512/1040/1040230.png"
+KAKAO_JS_KEY = "76eaac78ebaf08220bcf6d4b83012e91"
 
-# ──────────────────────────────────────────────────────────────
-# ★ 카카오 JavaScript 앱키를 아래에 입력하세요 ★
-# 발급 방법: https://developers.kakao.com → 내 애플리케이션
-#            → [플랫폼 키] → [JavaScript 키] 복사
-# 도메인 등록: [플랫폼 키] > [JavaScript 키] > JavaScript SDK 도메인
-#               에 streamlit 앱 URL 추가 필요
-# ──────────────────────────────────────────────────────────────
-KAKAO_JS_KEY = ""   # ← 여기에 32자리 JavaScript 키 붙여넣기
+OFFICE = "롯데타워앤강남빌딩부동산중개(주)"
+TEL_MAIN = "02-578-8285"
+TEL_MOBILE = "010-8985-8945"
 
-# CSS
+# ---------------------------------
+# 스타일
+# ---------------------------------
 st.markdown("""
 <style>
-  [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #0A1F44 0%, #1E3A6E 50%, #0d2856 100%) !important;
-  }
-  [data-testid="stSidebar"] { background: linear-gradient(180deg,#0A1F44,#1E2F5B); }
-  [data-testid="stSidebar"] * { color: #f8f8f8 !important; }
+.block-container {
+    max-width: 900px;
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+}
+.share-card {
+    background: #f7f9fc;
+    border: 1px solid #e6ebf2;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.yellow-card {
+    background: #fff8cc;
+    border: 1px solid #f0e08a;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.code-title {
+    font-weight: 700;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# 앱키 입력 안내 (비어있을 때만 표시)
-if not KAKAO_JS_KEY:
-    st.markdown("""
-    <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;padding:16px 20px;margin-bottom:16px;">
-      <b style="color:#92400e;">⚠️ 카카오 JS 앱키 미설정</b><br>
-      <span style="color:#78350f;font-size:0.9rem;">
-        아래 단계로 앱키를 발급 후 코드에 입력하면 썸네일 카드 공유가 활성화됩니다.<br><br>
-        1️⃣ <a href="https://developers.kakao.com" target="_blank">developers.kakao.com</a> 접속 → 로그인<br>
-        2️⃣ 내 애플리케이션 → 애플리케이션 추가하기<br>
-        3️⃣ [앱] → [플랫폼 키] → [JavaScript 키] 복사<br>
-        4️⃣ [JavaScript 키] → JavaScript SDK 도메인에 <code>ai5788285.streamlit.app</code> 추가<br>
-        5️⃣ [앱] → [제품 링크 관리] → [웹 도메인]에 동일 URL 추가<br>
-        6️⃣ 이 파일 2번째 줄 KAKAO_JS_KEY = "" 에 키 붙여넣기
-      </span>
-    </div>
-    """, unsafe_allow_html=True)
+# ---------------------------------
+# 헤더
+# ---------------------------------
+st.title("💬 카카오 공유 센터")
+st.caption("플랫폼 공유 · QR 생성 · 매물 홍보 문구 자동 생성")
 
-# SDK 모드 결정
-SDK_MODE = "sdk" if KAKAO_JS_KEY else "fallback"
+st.markdown("---")
 
-html_code = f"""
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+# ---------------------------------
+# 1) 기본 플랫폼 공유
+# ---------------------------------
+st.subheader("1️⃣ 기본 플랫폼 공유")
 
-  <!-- Kakao JavaScript SDK (2025 최신) -->
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
-          integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
-          crossorigin="anonymous"></script>
+st.markdown('<div class="yellow-card">', unsafe_allow_html=True)
+st.write("앱 전체를 카카오톡으로 공유할 수 있습니다.")
+st.code(APP_URL)
 
-  <!-- QR 코드 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
-
-  <style>
-    * {{ margin:0; padding:0; box-sizing:border-box; }}
-    body {{ font-family:'Noto Sans KR',sans-serif; background:transparent; }}
-    .card {{
-      background:rgba(255,255,255,0.97); border-radius:24px;
-      overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);
-      max-width:480px; margin:0 auto;
-    }}
-    .header {{
-      background:linear-gradient(135deg,#0A1F44,#1E3A6E);
-      padding:28px 24px 20px; border-bottom:3px solid #D4AF37; text-align:center;
-    }}
-    .logo {{ font-size:2.5rem; margin-bottom:6px; }}
-    .header h1 {{ color:#D4AF37; font-size:1.15rem; font-weight:900; line-height:1.4; margin-bottom:5px; }}
-    .header p  {{ color:#b0c4de; font-size:0.78rem; }}
-    .badge-row {{ display:flex; gap:6px; justify-content:center; margin-top:12px; flex-wrap:wrap; }}
-    .badge {{
-      background:rgba(212,175,55,0.15); border:1px solid #D4AF37; color:#D4AF37;
-      padding:3px 10px; border-radius:999px; font-size:0.7rem; font-weight:700;
-    }}
-    /* SDK 상태 뱃지 */
-    .sdk-badge {{
-      display:inline-block; padding:4px 12px; border-radius:999px;
-      font-size:0.72rem; font-weight:700; margin-bottom:12px;
-    }}
-    .sdk-on  {{ background:#dcfce7; color:#166534; border:1px solid #86efac; }}
-    .sdk-off {{ background:#fef9c3; color:#854d0e; border:1px solid #fcd34d; }}
-
-    .body {{ padding:24px; }}
-    .sec-title {{ font-size:0.72rem; font-weight:700; color:#888; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }}
-    .link-box {{
-      background:#f0f4ff; border:2px solid #c7d4f5; border-radius:10px;
-      padding:12px 14px; display:flex; align-items:center; gap:8px; margin-bottom:16px;
-    }}
-    .link-text {{ flex:1; font-size:0.72rem; color:#1d3a8a; word-break:break-all; font-weight:600; }}
-    .copy-btn {{
-      background:#0A1F44; color:white; border:none; padding:7px 12px;
-      border-radius:7px; cursor:pointer; font-size:0.7rem; font-weight:700;
-      white-space:nowrap; transition:background 0.2s;
-    }}
-    .copy-btn:hover {{ background:#1E3A6E; }}
-    .copy-btn.done {{ background:#22c55e; }}
-    .btn {{
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      width:100%; padding:14px; border-radius:12px; border:none; cursor:pointer;
-      font-family:'Noto Sans KR',sans-serif; font-size:0.95rem; font-weight:700;
-      transition:transform 0.15s,box-shadow 0.15s; text-decoration:none; margin-bottom:10px;
-    }}
-    .btn:active {{ transform:scale(0.97); }}
-    .btn-kakao {{ background:#FEE500; color:#3C1E1E; box-shadow:0 4px 14px rgba(254,229,0,0.4); }}
-    .btn-kakao:hover {{ box-shadow:0 6px 22px rgba(254,229,0,0.6); transform:translateY(-1px); }}
-    .btn-open {{ background:linear-gradient(135deg,#0A1F44,#1E3A6E); color:white; box-shadow:0 4px 14px rgba(10,31,68,0.3); }}
-    .btn-open:hover {{ box-shadow:0 6px 22px rgba(10,31,68,0.5); transform:translateY(-1px); }}
-    .btn-sms {{ background:#f0fdf4; color:#166534; border:2px solid #bbf7d0; }}
-    .btn-sms:hover {{ background:#dcfce7; }}
-    .divider {{ border:none; border-top:1px solid #e8edf5; margin:18px 0; }}
-    .features {{ display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:18px; }}
-    .feat {{ background:#f8fafc; border:1px solid #e2e8f0; border-radius:9px; padding:9px 11px; font-size:0.76rem; color:#334155; }}
-    .feat .ic {{ font-size:1rem; display:block; margin-bottom:2px; }}
-    .qr-section {{ text-align:center; }}
-    #qrcode {{ display:inline-block; padding:14px; background:white; border:2px solid #dde3ef; border-radius:14px; margin:10px auto; box-shadow:0 4px 12px rgba(0,0,0,0.07); }}
-    .qr-cap {{ font-size:0.72rem; color:#888; margin-top:6px; }}
-    .co-info {{ background:#0A1F44; color:#b0c4de; border-radius:11px; padding:13px 15px; font-size:0.72rem; line-height:1.9; margin-top:4px; }}
-    .co-info strong {{ color:#D4AF37; }}
-    .toast {{
-      position:fixed; bottom:24px; left:50%;
-      transform:translateX(-50%) translateY(70px);
-      background:#1e293b; color:white; padding:10px 22px;
-      border-radius:999px; font-size:0.82rem; font-weight:700;
-      box-shadow:0 8px 24px rgba(0,0,0,0.3); transition:transform 0.3s ease;
-      z-index:999; white-space:nowrap;
-    }}
-    .toast.show {{ transform:translateX(-50%) translateY(0); }}
-  </style>
-</head>
-<body>
-
-<div class="card">
-  <div class="header">
-    <div class="logo">🏠</div>
-    <h1>AI 예약 자동 매칭 챗봇<br>부동산플랫폼</h1>
-    <p>롯데타워앤강남빌딩부동산중개(주)</p>
-    <div class="badge-row">
-      <span class="badge">AI 매칭</span>
-      <span class="badge">저평가 분석</span>
-      <span class="badge">24시간 챗봇</span>
-      <span class="badge">숏츠 광고</span>
-    </div>
-  </div>
-
-  <div class="body">
-    <!-- SDK 상태 표시 -->
-    <div style="text-align:center;margin-bottom:14px;">
-      <span class="sdk-badge {'sdk-on' if KAKAO_JS_KEY else 'sdk-off'}">
-        {'✅ 카카오 SDK 활성화 — 미리보기 카드 공유 가능' if KAKAO_JS_KEY else '⚠️ SDK 미설정 — 기본 공유 모드'}
-      </span>
-    </div>
-
-    <div class="sec-title">🔗 앱 링크</div>
-    <div class="link-box">
-      <div class="link-text">{APP_URL}</div>
-      <button class="copy-btn" id="cpBtn" onclick="doCopy()">복사</button>
-    </div>
-
-    <button class="btn btn-kakao" onclick="shareKakao()">
-      💬&nbsp; 카카오톡으로 공유하기
-      {'&nbsp;<span style="font-size:0.7rem;opacity:0.8">(미리보기 카드)</span>' if KAKAO_JS_KEY else ''}
-    </button>
-    <a class="btn btn-open" href="{APP_URL}" target="_blank">
-      ▶&nbsp; 앱 바로 실행하기
-    </a>
-    <a class="btn btn-sms"
-       href="sms:?body=🏠 AI 부동산 플랫폼 바로 실행 → {APP_URL}">
-      📱&nbsp; 문자(SMS)로 공유하기
-    </a>
-
-    <hr class="divider">
-
-    <div class="sec-title">📋 주요 기능</div>
-    <div class="features">
-      <div class="feat"><span class="ic">🏠</span>매물 접수</div>
-      <div class="feat"><span class="ic">📊</span>AI 저평가 분석</div>
-      <div class="feat"><span class="ic">🤝</span>AI 자동 매칭</div>
-      <div class="feat"><span class="ic">🎬</span>숏츠 광고</div>
-      <div class="feat"><span class="ic">🤖</span>AI 챗봇 상담</div>
-      <div class="feat"><span class="ic">🔔</span>알림 관리</div>
-    </div>
-
-    <hr class="divider">
-
-    <div class="qr-section">
-      <div class="sec-title">📷 QR 코드</div>
-      <div id="qrcode"></div>
-      <p class="qr-cap">📸 카메라로 스캔하면 앱이 바로 열립니다</p>
-    </div>
-
-    <hr class="divider">
-
-    <div class="co-info">
-      🏢 <strong>롯데타워앤강남빌딩부동산중개(주)</strong><br>
-      개설등록번호: 11680-2023-00078 | 사업자등록번호: 461-86-02740<br>
-      서울 강남구 대치동 938외1, 삼환아르누보2, 507호<br>
-      ☎ <strong>02-578-8285</strong> &nbsp;/&nbsp; 📱 <strong>010-8985-8945</strong>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast">✅ 복사되었습니다!</div>
-
+kakao_app_html = f"""
+<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 <script>
-const APP_URL   = "{APP_URL}";
-const JS_KEY    = "{KAKAO_JS_KEY}";
-const SDK_MODE  = "{SDK_MODE}";
+function shareKakaoApp() {{
+    if (!window.Kakao) {{
+        alert("카카오 SDK 로드에 실패했습니다.");
+        return;
+    }}
 
-// QR 코드
-new QRCode(document.getElementById("qrcode"), {{
-  text: APP_URL, width:150, height:150,
-  colorDark:"#0A1F44", colorLight:"#ffffff",
-  correctLevel: QRCode.CorrectLevel.H
-}});
+    if (!window.Kakao.isInitialized()) {{
+        window.Kakao.init('{KAKAO_JS_KEY}');
+    }}
 
-// Kakao SDK 초기화 (키가 있을 때만)
-if (JS_KEY && typeof Kakao !== "undefined") {{
-  try {{
-    if (!Kakao.isInitialized()) Kakao.init(JS_KEY);
-    console.log("✅ Kakao SDK 초기화 완료");
-  }} catch(e) {{ console.warn("Kakao 초기화 실패:", e); }}
-}}
-
-// ── 링크 복사 ────────────────────────────────────────────────
-function doCopy() {{
-  const fallback = () => {{
-    const ta = document.createElement("textarea");
-    ta.value = APP_URL; document.body.appendChild(ta);
-    ta.select(); document.execCommand("copy");
-    document.body.removeChild(ta);
-    showToast("✅ 링크가 복사되었습니다!");
-  }};
-  if (navigator.clipboard) {{
-    navigator.clipboard.writeText(APP_URL).then(() => {{
-      const b = document.getElementById("cpBtn");
-      b.textContent = "✓ 복사됨"; b.classList.add("done");
-      showToast("✅ 링크가 복사되었습니다!");
-      setTimeout(() => {{ b.textContent="복사"; b.classList.remove("done"); }}, 2500);
-    }}).catch(fallback);
-  }} else {{ fallback(); }}
-}}
-
-// ── 토스트 ───────────────────────────────────────────────────
-function showToast(msg) {{
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2800);
-}}
-
-// ── 카카오톡 공유 ────────────────────────────────────────────
-function shareKakao() {{
-  // ① SDK 모드: 미리보기 카드 공유 (앱키 등록 시)
-  if (JS_KEY && typeof Kakao !== "undefined" && Kakao.isInitialized()) {{
-    Kakao.Share.sendDefault({{
-      objectType: "feed",
-      content: {{
-        title: "🏠 AI 예약 자동 매칭 챗봇 부동산플랫폼",
-        description: "AI 실거래가 분석 · 저평가 매물 탐지 · 자동 매칭 · 24시간 챗봇 상담\\n롯데타워앤강남빌딩부동산중개(주) | ☎ 02-578-8285",
-        imageUrl: "https://via.placeholder.com/800x400/0A1F44/D4AF37?text=AI+부동산+플랫폼",
-        link: {{ mobileWebUrl: APP_URL, webUrl: APP_URL }}
-      }},
-      social: {{
-        likeCount: 0,
-        commentCount: 0,
-        sharedCount: 0
-      }},
-      buttons: [
-        {{
-          title: "▶ 앱 바로 실행",
-          link: {{ mobileWebUrl: APP_URL, webUrl: APP_URL }}
+    window.Kakao.Share.sendDefault({{
+        objectType: 'feed',
+        content: {{
+            title: '{APP_NAME}',
+            description: '{APP_DESC}',
+            imageUrl: '{APP_IMAGE}',
+            link: {{
+                mobileWebUrl: '{APP_URL}',
+                webUrl: '{APP_URL}'
+            }}
         }},
-        {{
-          title: "📞 전화 상담",
-          link: {{ mobileWebUrl: "tel:02-578-8285", webUrl: APP_URL }}
-        }}
-      ]
+        buttons: [
+            {{
+                title: '플랫폼 바로가기',
+                link: {{
+                    mobileWebUrl: '{APP_URL}',
+                    webUrl: '{APP_URL}'
+                }}
+            }}
+        ]
     }});
-    return;
-  }}
-
-  // ② Fallback: 모바일 앱 스킴 → PC 클립보드 복사
-  const msg = "🏠 AI 부동산 플랫폼\\n\\n" +
-              "▶ 바로 실행하기:\\n" + APP_URL + "\\n\\n" +
-              "롯데타워앤강남빌딩부동산중개(주)\\n☎ 02-578-8285";
-
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {{
-    window.location.href = "kakaotalk://msg/send?text=" + encodeURIComponent(msg);
-    setTimeout(() => {{
-      if (!document.hidden) {{
-        navigator.clipboard.writeText(APP_URL).catch(()=>{{}});
-        showToast("💬 카카오톡 앱에서 공유해주세요!");
-      }}
-    }}, 1800);
-  }} else {{
-    navigator.clipboard.writeText(APP_URL).catch(()=>{{}});
-    showToast("💬 링크 복사됨! 카카오톡에 붙여넣기 하세요.");
-  }}
 }}
 </script>
-</body>
-</html>
-"""
 
-# Streamlit 컴포넌트로 렌더링
-components.html(html_code, height=1050, scrolling=False)
+<button onclick="shareKakaoApp()"
+    style="
+        width:100%;
+        background:#FEE500;
+        color:#191919;
+        border:none;
+        padding:16px 20px;
+        border-radius:12px;
+        font-size:18px;
+        font-weight:700;
+        cursor:pointer;">
+    💛 플랫폼 카카오 공유
+</button>
+"""
+components.html(kakao_app_html, height=90)
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.link_button("🚀 앱 바로 실행하기", APP_URL, use_container_width=True)
+
+st.markdown(
+    f"""
+<div class="share-card">
+    <b>대표 연락처</b><br>
+    ☎ {TEL_MAIN}<br>
+    📱 {TEL_MOBILE}
+</div>
+""",
+    unsafe_allow_html=True
+)
+
+st.markdown("---")
+
+# ---------------------------------
+# 2) QR 코드 공유
+# ---------------------------------
+st.subheader("2️⃣ QR 코드 공유")
+
+st.markdown('<div class="share-card">', unsafe_allow_html=True)
+qr = qrcode.make(APP_URL)
+buf = BytesIO()
+qr.save(buf, format="PNG")
+st.image(buf.getvalue(), use_container_width=False, width=320)
+st.write("QR을 스캔하면 플랫폼으로 바로 접속됩니다.")
+st.code(APP_URL)
+st.write("오픈하우스, 명함, 문자, 블로그, 전단지에 활용하기 좋습니다.")
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("---")
+
+# ---------------------------------
+# 3) 매물 홍보 문구 자동 생성
+# ---------------------------------
+st.subheader("3️⃣ 매물 홍보 문구 자동 생성")
+
+st.markdown('<div class="share-card">', unsafe_allow_html=True)
+
+with st.form("property_share_form"):
+    deal_type = st.selectbox("거래 유형", ["매매", "전세", "월세", "단기임대"])
+    area_name = st.text_input("지역", "강남구 대치동")
+    complex_name = st.text_input("단지명 / 건물명", "예: 개포래미안블레스티지")
+    price = st.text_input("가격", "예: 29억")
+    monthly_rent = st.text_input("월세", "예: 250만원 (월세 아니면 비워두기)")
+    area_size = st.text_input("면적", "예: 84㎡ / 34평")
+    floor_info = st.text_input("층 정보", "예: 15층")
+    direction = st.text_input("방향", "예: 남향")
+    point_1 = st.text_input("핵심 포인트 1", "예: 학군 우수")
+    point_2 = st.text_input("핵심 포인트 2", "예: 역세권")
+    point_3 = st.text_input("핵심 포인트 3", "예: 즉시 입주 가능")
+
+    submitted = st.form_submit_button("홍보 문구 생성", use_container_width=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------
+# 생성 결과
+# ---------------------------------
+if submitted:
+    property_data = {
+        "deal_type": deal_type,
+        "area_name": area_name,
+        "complex_name": complex_name,
+        "price": price,
+        "monthly_rent": monthly_rent,
+        "area_size": area_size,
+        "floor_info": floor_info,
+        "direction": direction,
+        "point_1": point_1,
+        "point_2": point_2,
+        "point_3": point_3,
+        "app_url": APP_URL,
+    }
+
+    result = build_property_share_data(property_data)
+
+    st.success("홍보 문구가 생성되었습니다.")
+
+    st.markdown('<div class="share-card">', unsafe_allow_html=True)
+    st.markdown('<div class="code-title">📌 카카오 공유 제목</div>', unsafe_allow_html=True)
+    st.code(result["title"])
+
+    st.markdown('<div class="code-title">🟡 카카오 공유 설명</div>', unsafe_allow_html=True)
+    st.code(result["description"])
+
+    st.markdown('<div class="code-title">📱 문자(SMS) 발송용 문구</div>', unsafe_allow_html=True)
+    st.code(result["sms_message"])
+
+    st.markdown('<div class="code-title">📝 블로그 / 단톡방 / 문자 확장 문구</div>', unsafe_allow_html=True)
+    st.code(result["blog_text"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    property_title = (
+        result["title"]
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", " ")
+    )
+    property_desc = (
+        result["description"]
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", " ")
+    )
+
+    st.subheader("4️⃣ 생성된 매물 카카오 공유")
+
+    property_kakao_html = f"""
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script>
+    function sharePropertyKakao() {{
+        if (!window.Kakao) {{
+            alert("카카오 SDK 로드에 실패했습니다.");
+            return;
+        }}
+
+        if (!window.Kakao.isInitialized()) {{
+            window.Kakao.init('{KAKAO_JS_KEY}');
+        }}
+
+        window.Kakao.Share.sendDefault({{
+            objectType: 'feed',
+            content: {{
+                title: '{property_title}',
+                description: '{property_desc}',
+                imageUrl: '{APP_IMAGE}',
+                link: {{
+                    mobileWebUrl: '{APP_URL}',
+                    webUrl: '{APP_URL}'
+                }}
+            }},
+            buttons: [
+                {{
+                    title: '매물 보러가기',
+                    link: {{
+                        mobileWebUrl: '{APP_URL}',
+                        webUrl: '{APP_URL}'
+                    }}
+                }}
+            ]
+        }});
+    }}
+    </script>
+
+    <button onclick="sharePropertyKakao()"
+        style="
+            width:100%;
+            background:#FEE500;
+            color:#191919;
+            border:none;
+            padding:16px 20px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:700;
+            cursor:pointer;">
+        🏠 이 매물 카카오 공유
+    </button>
+    """
+    components.html(property_kakao_html, height=90)
+
+    st.markdown("---")
+    st.subheader("5️⃣ 활용 안내")
+    st.info("""
+생성된 문구 활용 방법
+
+1. 카카오 공유 제목 / 설명 → 카카오톡 공유용
+2. 문자(SMS) 문구 → 고객 직접 발송용
+3. 블로그/단톡방 문구 → 단체방, 블로그, 카페 업로드용
+4. 다음 단계에서는 매물접수 데이터와 자동 연결 가능
+""")
+else:
+    st.info("""
+아직 매물 홍보 문구를 생성하지 않았습니다.
+
+위 입력란에 매물 정보를 넣고
+'홍보 문구 생성' 버튼을 누르면
+
+- 카카오 공유 제목
+- 카카오 설명 문구
+- 문자 발송 문구
+- 블로그 / 단톡방 문구
+- 매물 카카오 공유 버튼
+
+이 자동으로 생성됩니다.
+""")
+
+st.markdown("---")
+st.subheader("6️⃣ 다음 자동화 단계")
+st.markdown("""
+- `01_매물접수.py` 입력값 자동 불러오기
+- 매물별 전용 링크 자동 생성
+- VIP 고객군별 추천 문구 자동 생성
+- 블로그 / 카카오 / 숏츠 문안 동시 생성
+- 매물 등록 → 자동 홍보 흐름 연결
+""")
