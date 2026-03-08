@@ -27,23 +27,26 @@ cols = st.columns(5)
 selected_idx = None
 for i, (col, (_, row)) in enumerate(zip(cols, top5.iterrows())):
     with col:
-        grade = row.get("grade","-")
-        color = {"S":"🔴","A":"🟠","B":"🟡","C":"🟢"}.get(grade,"⚪")
-        st.markdown(f"**{color} {grade}등급**")
-        st.metric(row.get("complex_name","")[:8], f"{row.get('ai_score',0)}점")
+        score = row.get("ai_score", 0)
+        color = "🔥" if score>=70 else "⭐" if score>=50 else "👍" if score>=35 else "⚪"
+        apt_name = str(row.get("apt", row.get("complex_name", "-")))[:8]
+        st.markdown(f"**{color}**")
+        st.metric(apt_name, f"{score}점")
         if st.button("선택", key=f"sel_{i}", use_container_width=True):
             st.session_state["selected_prop"] = row.to_dict()
 
 if "selected_prop" in st.session_state:
     prop = st.session_state["selected_prop"]
     st.markdown("---")
-    st.markdown(f"### 📌 선택 매물: {prop.get('complex_name','')} | {prop.get('deal_type','')} {prop.get('price','')}")
+    apt  = prop.get('apt', prop.get('complex_name', '-'))
+    area = prop.get('region', prop.get('area_name', '-'))
+    st.markdown(f"### 📌 선택 매물: {apt} ({area}) | {prop.get('deal_type','')} {prop.get('price','')}억")
 
     ai = calculate_ai_score(prop)
     c1, c2, c3 = st.columns(3)
     c1.metric("AI 저평가 점수", f"{ai['ai_score']}점")
     c2.metric("등급", ai['grade'])
-    c3.metric("지역", prop.get("area_name",""))
+    c3.metric("지역", prop.get("region", prop.get("area_name", "-")))
 
     st.markdown("---")
     action = st.radio("🚀 원하는 작업 선택", [
