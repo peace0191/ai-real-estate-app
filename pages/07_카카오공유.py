@@ -23,22 +23,17 @@ TEL_MOBILE = "010-8985-8945"
 # ---------------------------------
 st.markdown("""
 <style>
-.block-container {
-    max-width: 900px;
-    padding-top: 1.2rem;
-    padding-bottom: 2rem;
-}
 .share-card {
     background: #f7f9fc;
     border: 1px solid #e6ebf2;
-    border-radius: 18px;
+    border-radius: 16px;
     padding: 20px;
     margin-bottom: 16px;
 }
 .yellow-card {
     background: #fff8cc;
     border: 1px solid #f0e08a;
-    border-radius: 18px;
+    border-radius: 16px;
     padding: 20px;
     margin-bottom: 16px;
 }
@@ -51,7 +46,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------
-# 헤더
+# 페이지 헤더
 # ---------------------------------
 st.title("💬 카카오 공유 센터")
 st.caption("플랫폼 공유 · QR 생성 · 매물 홍보 문구 자동 생성")
@@ -63,76 +58,75 @@ st.markdown("---")
 # ---------------------------------
 st.subheader("1️⃣ 기본 플랫폼 공유")
 
-st.markdown('<div class="yellow-card">', unsafe_allow_html=True)
-st.write("앱 전체를 카카오톡으로 공유할 수 있습니다.")
-st.code(APP_URL)
+col1, col2 = st.columns([1.2, 1])
 
-kakao_app_html = f"""
-<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
-<script>
-function shareKakaoApp() {{
-    if (!window.Kakao) {{
-        alert("카카오 SDK 로드에 실패했습니다.");
-        return;
-    }}
+with col1:
+    st.markdown('<div class="yellow-card">', unsafe_allow_html=True)
+    st.write("앱 전체를 카카오톡으로 공유할 수 있습니다.")
+    st.code(APP_URL)
 
-    if (!window.Kakao.isInitialized()) {{
-        window.Kakao.init('{KAKAO_JS_KEY}');
-    }}
+    kakao_app_html = f"""
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script>
+    function shareKakaoApp() {{
+        if (!window.Kakao) {{
+            alert("카카오 SDK 로드에 실패했습니다.");
+            return;
+        }}
 
-    window.Kakao.Share.sendDefault({{
-        objectType: 'feed',
-        content: {{
-            title: '{APP_NAME}',
-            description: '{APP_DESC}',
-            imageUrl: '{APP_IMAGE}',
-            link: {{
-                mobileWebUrl: '{APP_URL}',
-                webUrl: '{APP_URL}'
-            }}
-        }},
-        buttons: [
-            {{
-                title: '플랫폼 바로가기',
+        if (!window.Kakao.isInitialized()) {{
+            window.Kakao.init('{KAKAO_JS_KEY}');
+        }}
+
+        window.Kakao.Share.sendDefault({{
+            objectType: 'feed',
+            content: {{
+                title: '{APP_NAME}',
+                description: '{APP_DESC}',
+                imageUrl: '{APP_IMAGE}',
                 link: {{
                     mobileWebUrl: '{APP_URL}',
                     webUrl: '{APP_URL}'
                 }}
-            }}
-        ]
-    }});
-}}
-</script>
+            }},
+            buttons: [
+                {{
+                    title: '플랫폼 바로가기',
+                    link: {{
+                        mobileWebUrl: '{APP_URL}',
+                        webUrl: '{APP_URL}'
+                    }}
+                }}
+            ]
+        }});
+    }}
+    </script>
 
-<button onclick="shareKakaoApp()"
-    style="
-        width:100%;
-        background:#FEE500;
-        color:#191919;
-        border:none;
-        padding:16px 20px;
-        border-radius:12px;
-        font-size:18px;
-        font-weight:700;
-        cursor:pointer;">
-    💛 플랫폼 카카오 공유
-</button>
-"""
-components.html(kakao_app_html, height=90)
-st.markdown('</div>', unsafe_allow_html=True)
+    <button onclick="shareKakaoApp()"
+        style="
+            background:#FEE500;
+            color:#191919;
+            border:none;
+            padding:14px 22px;
+            border-radius:10px;
+            font-size:17px;
+            font-weight:700;
+            cursor:pointer;">
+        💛 플랫폼 카카오 공유
+    </button>
+    """
+    components.html(kakao_app_html, height=90)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.link_button("🚀 앱 바로 실행하기", APP_URL, use_container_width=True)
-
-st.markdown(
-    f"""
-<div class="share-card">
-    <b>대표 연락처</b><br>
-    ☎ {TEL_MAIN}<br>
-    📱 {TEL_MOBILE}
-</div>
-""",
-    unsafe_allow_html=True
-)
+with col2:
+    st.markdown('<div class="share-card">', unsafe_allow_html=True)
+    st.write("바로가기 버튼")
+    st.link_button("🚀 앱 바로 실행하기", APP_URL)
+    st.markdown("")
+    st.write("대표 연락처")
+    st.write(f"☎ {TEL_MAIN}")
+    st.write(f"📱 {TEL_MOBILE}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -141,15 +135,20 @@ st.markdown("---")
 # ---------------------------------
 st.subheader("2️⃣ QR 코드 공유")
 
-st.markdown('<div class="share-card">', unsafe_allow_html=True)
-qr = qrcode.make(APP_URL)
-buf = BytesIO()
-qr.save(buf, format="PNG")
-st.image(buf.getvalue(), use_container_width=False, width=320)
-st.write("QR을 스캔하면 플랫폼으로 바로 접속됩니다.")
-st.code(APP_URL)
-st.write("오픈하우스, 명함, 문자, 블로그, 전단지에 활용하기 좋습니다.")
-st.markdown('</div>', unsafe_allow_html=True)
+qr_col1, qr_col2 = st.columns([1, 1.3])
+
+with qr_col1:
+    qr = qrcode.make(APP_URL)
+    buf = BytesIO()
+    qr.save(buf, format="PNG")
+    st.image(buf.getvalue(), width=220)
+
+with qr_col2:
+    st.markdown('<div class="share-card">', unsafe_allow_html=True)
+    st.write("QR을 스캔하면 플랫폼으로 바로 접속됩니다.")
+    st.code(APP_URL)
+    st.write("오픈하우스, 명함, 문자, 블로그, 전단지에 활용하기 좋습니다.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -161,19 +160,24 @@ st.subheader("3️⃣ 매물 홍보 문구 자동 생성")
 st.markdown('<div class="share-card">', unsafe_allow_html=True)
 
 with st.form("property_share_form"):
-    deal_type = st.selectbox("거래 유형", ["매매", "전세", "월세", "단기임대"])
-    area_name = st.text_input("지역", "강남구 대치동")
-    complex_name = st.text_input("단지명 / 건물명", "예: 개포래미안블레스티지")
-    price = st.text_input("가격", "예: 29억")
-    monthly_rent = st.text_input("월세", "예: 250만원 (월세 아니면 비워두기)")
-    area_size = st.text_input("면적", "예: 84㎡ / 34평")
-    floor_info = st.text_input("층 정보", "예: 15층")
-    direction = st.text_input("방향", "예: 남향")
-    point_1 = st.text_input("핵심 포인트 1", "예: 학군 우수")
-    point_2 = st.text_input("핵심 포인트 2", "예: 역세권")
-    point_3 = st.text_input("핵심 포인트 3", "예: 즉시 입주 가능")
+    c1, c2 = st.columns(2)
 
-    submitted = st.form_submit_button("홍보 문구 생성", use_container_width=True)
+    with c1:
+        deal_type = st.selectbox("거래 유형", ["매매", "전세", "월세", "단기임대"])
+        area_name = st.text_input("지역", "강남구 대치동")
+        complex_name = st.text_input("단지명 / 건물명", "예: 개포래미안블레스티지")
+        price = st.text_input("가격", "예: 29억")
+        monthly_rent = st.text_input("월세", "예: 250만원 (월세 아니면 비워두기)")
+        area_size = st.text_input("면적", "예: 84㎡ / 34평")
+
+    with c2:
+        floor_info = st.text_input("층 정보", "예: 15층")
+        direction = st.text_input("방향", "예: 남향")
+        point_1 = st.text_input("핵심 포인트 1", "예: 학군 우수")
+        point_2 = st.text_input("핵심 포인트 2", "예: 역세권")
+        point_3 = st.text_input("핵심 포인트 3", "예: 즉시 입주 가능")
+
+    submitted = st.form_submit_button("홍보 문구 생성")
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -200,20 +204,27 @@ if submitted:
 
     st.success("홍보 문구가 생성되었습니다.")
 
-    st.markdown('<div class="share-card">', unsafe_allow_html=True)
-    st.markdown('<div class="code-title">📌 카카오 공유 제목</div>', unsafe_allow_html=True)
-    st.code(result["title"])
+    out1, out2 = st.columns(2)
 
-    st.markdown('<div class="code-title">🟡 카카오 공유 설명</div>', unsafe_allow_html=True)
-    st.code(result["description"])
+    with out1:
+        st.markdown('<div class="share-card">', unsafe_allow_html=True)
+        st.markdown('<div class="code-title">📌 카카오 공유 제목</div>', unsafe_allow_html=True)
+        st.code(result["title"])
 
-    st.markdown('<div class="code-title">📱 문자(SMS) 발송용 문구</div>', unsafe_allow_html=True)
-    st.code(result["sms_message"])
+        st.markdown('<div class="code-title">🟡 카카오 공유 설명</div>', unsafe_allow_html=True)
+        st.code(result["description"])
 
-    st.markdown('<div class="code-title">📝 블로그 / 단톡방 / 문자 확장 문구</div>', unsafe_allow_html=True)
-    st.code(result["blog_text"])
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="code-title">📱 문자(SMS) 발송용 문구</div>', unsafe_allow_html=True)
+        st.code(result["sms_message"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
+    with out2:
+        st.markdown('<div class="share-card">', unsafe_allow_html=True)
+        st.markdown('<div class="code-title">📝 블로그 / 단톡방 / 문자 확장 문구</div>', unsafe_allow_html=True)
+        st.code(result["blog_text"])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # 카카오 공유용 문자열 안전 처리
     property_title = (
         result["title"]
         .replace("\\", "\\\\")
@@ -268,13 +279,12 @@ if submitted:
 
     <button onclick="sharePropertyKakao()"
         style="
-            width:100%;
             background:#FEE500;
             color:#191919;
             border:none;
-            padding:16px 20px;
-            border-radius:12px;
-            font-size:18px;
+            padding:14px 22px;
+            border-radius:10px;
+            font-size:17px;
             font-weight:700;
             cursor:pointer;">
         🏠 이 매물 카카오 공유
@@ -283,6 +293,7 @@ if submitted:
     components.html(property_kakao_html, height=90)
 
     st.markdown("---")
+
     st.subheader("5️⃣ 활용 안내")
     st.info("""
 생성된 문구 활용 방법
@@ -292,6 +303,7 @@ if submitted:
 3. 블로그/단톡방 문구 → 단체방, 블로그, 카페 업로드용
 4. 다음 단계에서는 매물접수 데이터와 자동 연결 가능
 """)
+
 else:
     st.info("""
 아직 매물 홍보 문구를 생성하지 않았습니다.
@@ -309,7 +321,12 @@ else:
 """)
 
 st.markdown("---")
+
+# ---------------------------------
+# 향후 확장 안내
+# ---------------------------------
 st.subheader("6️⃣ 다음 자동화 단계")
+
 st.markdown("""
 - `01_매물접수.py` 입력값 자동 불러오기
 - 매물별 전용 링크 자동 생성
