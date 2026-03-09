@@ -84,8 +84,12 @@ def save_shorts_candidate(item: dict):
     """add_shorts_candidate 별칭"""
     add_shorts_candidate(item)
 
+def get_demands() -> list:
+    """수요 목록 반환 (matching_service 호환)"""
+    return _load(DEMAND_FILE)
+
 def get_demand_items() -> list:
-    """수요 목록 반환"""
+    """수요 목록 반환 (별칭)"""
     return get_demands()
 
 def get_supply_items() -> list:
