@@ -1,4 +1,25 @@
 import streamlit as st
+import pandas as pd
+
+# 🔴 추가된 코드 (AI 매칭 기능)
+from services.ai_engine.price_ai import detect_undervalued
+from services.vip_match_engine import match_vip_customer
+from services.notification_service import send_vip_alert
+from services.customer_store import load_customers
+
+st.set_page_config(
+    page_title="AI 예약 자동 매칭 챗봇 부동산플랫폼",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)import streamlit as st
+import pandas as pd
+
+# 🔴 추가된 코드 (AI 매칭 기능)
+from services.ai_engine.price_ai import detect_undervalued
+from services.vip_match_engine import match_vip_customer
+from services.notification_service import send_vip_alert
+from services.customer_store import load_customers
 
 st.set_page_config(
     page_title="AI 예약 자동 매칭 챗봇 부동산플랫폼",
