@@ -1,0 +1,17 @@
+import pandas as pd
+
+data = {
+    "이름": name,
+    "전화": phone,
+    "예약일": date
+}
+
+df = pd.DataFrame([data])
+
+try:
+    old = pd.read_csv("data/customers.csv")
+    df = pd.concat([old, df])
+except:
+    pass
+
+df.to_csv("data/customers.csv", index=False)
